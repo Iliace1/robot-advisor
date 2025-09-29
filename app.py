@@ -112,7 +112,7 @@ fig.add_scatter(x=[min_risk_port["Risque"]], y=[min_risk_port["Rendement"]],
 st.plotly_chart(fig, use_container_width=True)
 
 # ------------------------------
-# Backtest & Benchmark (séparés)
+# Backtest & Benchmark
 # ------------------------------
 st.subheader("⏳ Backtest & Benchmark")
 opt_weights = max_sharpe_port[choix_etfs].values
@@ -120,12 +120,10 @@ opt_returns = (sel_returns * opt_weights).sum(axis=1)
 cum_opt = (1 + opt_returns).cumprod()
 cum_bench = (1 + returns[benchmark_etf]).cumprod()
 
-# Graphe 1 : Portefeuille optimal
 fig_backtest = px.line(cum_opt, title="📊 Croissance cumulée du Portefeuille Optimal")
 fig_backtest.update_layout(yaxis_title="Croissance cumulée", xaxis_title="Date")
 st.plotly_chart(fig_backtest, use_container_width=True)
 
-# Graphe 2 : Benchmark
 fig_bench = px.line(cum_bench, title=f"📈 Croissance cumulée du Benchmark ({benchmark_etf})")
 fig_bench.update_layout(yaxis_title="Croissance cumulée", xaxis_title="Date")
 st.plotly_chart(fig_bench, use_container_width=True)
@@ -157,7 +155,7 @@ rapport += "- Vérifier trimestriellement.\n- Rééquilibrer si un ETF dérive d
 st.markdown(rapport)
 
 # ------------------------------
-# Export PDF (UTF-8 safe)
+# Export PDF (Fix UTF-8 / FPDF)
 # ------------------------------
 def generate_pdf():
     pdf = FPDF()
@@ -169,7 +167,11 @@ def generate_pdf():
     pdf.ln(10)
     safe_text = rapport.encode("latin-1", "replace").decode("latin-1")
     pdf.multi_cell(0, 10, safe_text)
-    return pdf.output(dest="S").encode("latin-1", "replace")
+
+    pdf_output = pdf.output(dest="S")
+    if isinstance(pdf_output, str):  # cas ancienne version
+        return pdf_output.encode("latin-1", "ignore")
+    return pdf_output  # cas nouvelle version (bytes)
 
 pdf_bytes = generate_pdf()
 st.download_button("📥 Télécharger le rapport PDF",
